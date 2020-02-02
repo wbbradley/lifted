@@ -1,0 +1,4 @@
+[MASTER]
+
+disable=invalid-name,
+        no-else-return
