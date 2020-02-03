@@ -1,11 +1,11 @@
-"""Setup for parsing."""
+"""Setup."""
 import setuptools
 
 with open("README.md", "r") as fh:
     LONG_DESCRIPTION = fh.read()
 
 setuptools.setup(
-    name="parsing",
+    name="lifted",
     version="0.1.0",
     author="William Bradley",
     author_email="williambbradley@gmail.com",

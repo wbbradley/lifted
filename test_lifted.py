@@ -1,7 +1,7 @@
 """Test the parsing library."""
 import subprocess
 
-from parsing import (many, string, ParseState, mconcat, lift, chomp_space)
+from lifted import (many, string, ParseState, mconcat, lift, chomp_space)
 
 def test_many():
     """Test many."""
@@ -15,4 +15,4 @@ def test_chomp_space():
 
 def test_parsing_lint():
     """Lint the main source file."""
-    print(subprocess.check_output(['pylint', 'parsing.py']))
+    print(subprocess.check_output(['pylint', 'lifted.py']))
