@@ -7,6 +7,3 @@ verify_ssl = true
 pylint = "*"
 pytest = "*"
 twine = "*"
-
-[requires]
-python_version = "3.7"
