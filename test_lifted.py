@@ -15,4 +15,4 @@ def test_chomp_space():
 
 def test_parsing_lint():
     """Lint the main source file."""
-    print(subprocess.check_output(['pylint', 'lifted.py']))
+    print(subprocess.check_output(['pylint', 'lifted/__init__.py']))
