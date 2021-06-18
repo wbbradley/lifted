@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="lifted",
-    version="0.1.1",
+    version="0.2.1",
     author="William Bradley",
     author_email="williambbradley@gmail.com",
     description="A minimal parser combinator library.",
