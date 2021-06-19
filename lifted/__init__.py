@@ -85,6 +85,7 @@ def digits(parse_state):
 
 
 def whole(parser):
+    """The parser must match the remainder of the input."""
     def fn(parse_state):
         parsing = parser(parse_state)
         if parsing:
@@ -134,13 +135,14 @@ def skip_space(parser, fail_without_whitespace=True):
     return fn
 
 
-def chomp_space(parser): return skip_space(
-    parser, fail_without_whitespace=False)
+def chomp_space(parser):
+    """Eat the space prior to a parser."""
+    return skip_space(parser, fail_without_whitespace=False)
 
 
 def char(ch):
-    assert len(ch) == 1
     """Return a parser for a specific char."""
+    assert len(ch) == 1
     def fn(parse_state):
         """Parse the next character."""
         if parse_state.pos < len(parse_state.text):
@@ -151,8 +153,8 @@ def char(ch):
 
 
 def not_char(ch):
-    assert len(ch) == 1
     """Return a parser for anything but a specific char."""
+    assert len(ch) == 1
     def fn(parse_state):
         """Parse the next character."""
         if parse_state.pos < len(parse_state.text):
@@ -164,6 +166,7 @@ def not_char(ch):
 
 
 def take_while(match_char_fn):
+    """Match while a match function returns True."""
     def fn(parse_state):
         """Parse text while match_char_fn returns True."""
         len_input = len(parse_state.text)
@@ -219,9 +222,8 @@ def many(parser, sep_by=None):
                     parsing = parse_separator(parse_state)
                     if not parsing:
                         break
-                    else:
-                        prior_parse_state = parse_state
-                        parse_state = parsing.parse_state
+                    prior_parse_state = parse_state
+                    parse_state = parsing.parse_state
                 else:
                     prior_parse_state = parse_state
             else:
