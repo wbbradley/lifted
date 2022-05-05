@@ -1,6 +1,7 @@
 """Parser combinator framework."""
-
 from collections import namedtuple
+from typing import Callable, Optional, Any, Union, Iterable, TypeVar
+from typing_extensions import TypeAlias
 
 
 class Error(Exception):
@@ -17,8 +18,12 @@ ParseState = namedtuple('ParseState', ['text', 'pos'])
 # A value from a parser, and the next parse state.
 Parsing = namedtuple('Parsing', ['value', 'parse_state'])
 
+Parser: TypeAlias = Callable[[ParseState], Optional[Parsing]]
+T = TypeVar('T')
+U = TypeVar('U')
+V = TypeVar('V')
 
-def parse_string(parse_state, s):
+def parse_string(parse_state: ParseState, s: str) -> Optional[Parsing]:
     """Parse a specific string."""
     pos = parse_state.pos
     len_input = len(parse_state.text)
@@ -34,18 +39,20 @@ def parse_string(parse_state, s):
         return Parsing(parse_state.text[parse_state.pos:pos],
                        ParseState(parse_state.text, pos))
 
+    return None
 
-def compose(f, g):
+
+def compose(f: Callable[[U], V], g: Callable[[T], U]) -> Callable[[T], V]:
     """1-arity function composition."""
     return lambda x: f(g(x))
 
 
-def mconcat(xs):
+def mconcat(xs: Iterable[Optional[str]]) -> str:
     """Concatenate strings that are not None from a sequence."""
     return ''.join([x for x in xs if x is not None])
 
 
-def constant(x):
+def constant(x: T) -> Callable[[Any], T]:
     """Always return the given value, ignoring the input."""
     return lambda _: x
 
@@ -65,14 +72,14 @@ def third(xs):
     return xs[2]
 
 
-def end_of_input(parse_state):
+def end_of_input(parse_state: ParseState) -> Optional[Parsing]:
     """Match the end of text, return a value of None."""
     if len(parse_state.text) == parse_state.pos:
         return Parsing(None, parse_state)
     return None
 
 
-def digits(parse_state):
+def digits(parse_state: ParseState) -> Optional[Parsing]:
     """Parse digits."""
     pos = parse_state.pos
     while pos < len(parse_state.text) and str.isdigit(parse_state.text[pos]):
@@ -84,7 +91,7 @@ def digits(parse_state):
         return None
 
 
-def whole(parser):
+def whole(parser: Parser) -> Parser:
     """The parser must match the remainder of the input."""
     def fn(parse_state):
         parsing = parser(parse_state)
@@ -95,7 +102,7 @@ def whole(parser):
     return fn
 
 
-def option(parser, otherwise=None):
+def option(parser: Parser, otherwise: Any = None) -> Parser:
     """Create a parser that succeeds even when the given parser does not.
 
     If nothing was parsed, then the value that was parsed is |otherwise|.
@@ -110,7 +117,7 @@ def option(parser, otherwise=None):
     return fn
 
 
-def whitespace(parse_state):
+def whitespace(parse_state: ParseState) -> Optional[Parsing]:
     """Parse 1+ whitespaces, value is just a single space."""
     pos = parse_state.pos
     while pos < len(parse_state.text) and str.isspace(parse_state.text[pos]):
@@ -121,7 +128,7 @@ def whitespace(parse_state):
         return None
 
 
-def skip_space(parser, fail_without_whitespace=True):
+def skip_space(parser: Parser, fail_without_whitespace: bool = True) -> Parser:
     """Creates a new parser that skips the space before the given parse."""
     def fn(parse_state):
         """A function which will skip space before parsing."""
@@ -135,12 +142,12 @@ def skip_space(parser, fail_without_whitespace=True):
     return fn
 
 
-def chomp_space(parser):
+def chomp_space(parser: Parser) -> Parser:
     """Eat the space prior to a parser."""
     return skip_space(parser, fail_without_whitespace=False)
 
 
-def char(ch):
+def char(ch: str) -> Parser:
     """Return a parser for a specific char."""
     assert len(ch) == 1
     def fn(parse_state):
@@ -152,7 +159,7 @@ def char(ch):
     return fn
 
 
-def not_char(ch):
+def not_char(ch: str) -> Parser:
     """Return a parser for anything but a specific char."""
     assert len(ch) == 1
     def fn(parse_state):
@@ -165,7 +172,7 @@ def not_char(ch):
     return fn
 
 
-def take_while(match_char_fn):
+def take_while(match_char_fn: Callable[[str], bool], allow_empty: bool = False) -> Parser:
     """Match while a match function returns True."""
     def fn(parse_state):
         """Parse text while match_char_fn returns True."""
@@ -176,21 +183,23 @@ def take_while(match_char_fn):
         if pos != parse_state.pos:
             return Parsing(parse_state.text[parse_state.pos:pos],
                            ParseState(parse_state.text, pos))
+        if allow_empty:
+            return Parsing(None, ParseState(parse_state.text, pos))
         return None
     return fn
 
 
-def until(match_char_fn):
+def until(match_char_fn: Callable[[str], bool]) -> Parser:
     """Return a parser that matches until the given predicate matches."""
     return take_while(lambda x: not match_char_fn(x))
 
 
-def string(s):
+def string(s: str) -> Parser:
     """Return a parser for a specific string."""
     return lambda parse_state: parse_string(parse_state, s)
 
 
-def lift(fn, parser):
+def lift(fn: Callable[[Any], Any], parser: Parser) -> Parser:
     """Like fmap for a parser."""
     def lifted_parser(parse_state):
         """Lift this parser to pass its successful output through."""
@@ -201,10 +210,10 @@ def lift(fn, parser):
     return lifted_parser
 
 
-def many(parser, sep_by=None):
+def many(parser: Parser, sep_by: Optional[Union[str, Parser]] = None) -> Parser:
     """Kleene star."""
     if isinstance(sep_by, str):
-        parse_separator = string(sep_by)
+        parse_separator: Optional[Parser] = string(sep_by)
     else:
         parse_separator = sep_by
 
@@ -232,7 +241,7 @@ def many(parser, sep_by=None):
     return fn
 
 
-def many1(parser, sep_by=None):
+def many1(parser: Parser, sep_by: Optional[str] = None) -> Parser:
     """Kleene plus."""
     parser = many(parser, sep_by=sep_by)
 
@@ -244,7 +253,7 @@ def many1(parser, sep_by=None):
     return fn
 
 
-def any_of(parsers):
+def any_of(parsers: list[Parser]) -> Parser:
     """Return a parser that will succeed for any of the given parsers.
 
     Note that parsing attempts are still ordered. So, if multiple parsers could
@@ -261,7 +270,7 @@ def any_of(parsers):
     return fn
 
 
-def sequence(parsers):
+def sequence(parsers: list[Parser]) -> Parser:
     """Return a parser for the given sequence."""
     def fn(parse_state):
         """Parse a sequence of parsers. Must succeed with all."""
@@ -276,7 +285,7 @@ def sequence(parsers):
     return fn
 
 
-def strings(*args):
+def strings(*args: list[str]) -> Parser:
     """Return a parser that passes for the given string options."""
     def fn(parse_state):
         """Parse the closed-over |args| as strings."""
@@ -288,5 +297,5 @@ def strings(*args):
     return fn
 
 
-parse_until_colon_or_whitespace = until(
+parse_until_colon_or_whitespace: Parser = until(
     lambda ch: ch == ':' or str.isspace(ch))
