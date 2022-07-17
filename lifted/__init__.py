@@ -1,6 +1,5 @@
 """Parser combinator framework."""
-from collections import namedtuple
-from typing import Callable, Optional, Any, Union, Iterable, TypeVar
+from typing import Callable, Optional, Any, Union, Iterable, TypeVar, NamedTuple
 from typing_extensions import TypeAlias
 
 
@@ -13,15 +12,24 @@ class ParserError(Error):
 
 
 # The current location of the parser.
-ParseState = namedtuple('ParseState', ['text', 'pos'])
+class ParseState(NamedTuple):
+    """The latest location parsed-to."""
+    text: str
+    pos: int
+
 
 # A value from a parser, and the next parse state.
-Parsing = namedtuple('Parsing', ['value', 'parse_state'])
+class Parsing(NamedTuple):
+    """The output of the parse."""
+    value: Any
+    parse_state: ParseState
+
 
 Parser: TypeAlias = Callable[[ParseState], Optional[Parsing]]
 T = TypeVar('T')
 U = TypeVar('U')
 V = TypeVar('V')
+
 
 def parse_string(parse_state: ParseState, s: str) -> Optional[Parsing]:
     """Parse a specific string."""
@@ -150,11 +158,12 @@ def chomp_space(parser: Parser) -> Parser:
 def char(ch: str) -> Parser:
     """Return a parser for a specific char."""
     assert len(ch) == 1
+
     def fn(parse_state):
         """Parse the next character."""
         if parse_state.pos < len(parse_state.text):
             if parse_state.text[parse_state.pos] == ch:
-                return Parsing(ch, ParseState(parse_state.text, parse_state.pos+1))
+                return Parsing(ch, ParseState(parse_state.text, parse_state.pos + 1))
         return None
     return fn
 
@@ -162,12 +171,13 @@ def char(ch: str) -> Parser:
 def not_char(ch: str) -> Parser:
     """Return a parser for anything but a specific char."""
     assert len(ch) == 1
+
     def fn(parse_state):
         """Parse the next character."""
         if parse_state.pos < len(parse_state.text):
             if parse_state.text[parse_state.pos] != ch:
                 return Parsing(parse_state.text[parse_state.pos],
-                               ParseState(parse_state.text, parse_state.pos+1))
+                               ParseState(parse_state.text, parse_state.pos + 1))
         return None
     return fn
 
